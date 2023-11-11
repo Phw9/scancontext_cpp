@@ -4,7 +4,7 @@ project(scan_context)
 set(CMAKE_BUILD_TYPE "Release")
 # set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g -lgflags")
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(gflags REQUIRED)
 
 find_package(OpenMP REQUIRED)
 find_package(GTSAM REQUIRED QUIET)
@@ -37,7 +38,7 @@ include_directories(
 )
 
 add_executable(scanContext src/scanRegistration.cpp)
-target_link_libraries(scanContext ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam)
+target_link_libraries(scanContext ${PCL_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam gflags)
 
 # add_executable(alaserOdometry src/laserOdometry.cpp)
 # target_link_libraries(alaserOdometry ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES})
