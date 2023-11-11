@@ -37,7 +37,10 @@ include_directories(
   ${GTSAM_INCLUDE_DIR}
 )
 
-add_executable(scanContext src/scanRegistration.cpp)
+add_executable(scanContext 
+  src/scanRegistration.cpp
+  include/scancontext/Scancontext.cpp
+)
 target_link_libraries(scanContext ${PCL_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam gflags)
 
 # add_executable(alaserOdometry src/laserOdometry.cpp)

@@ -333,10 +333,10 @@ std::pair<int, float> SCManager::detectLoopClosureIDBetweenSession (std::vector<
 } // SCManager::detectLoopClosureIDBetweenSession
 
 
-std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, std::vector<std::vector<double>>& loop_histories)
+std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, std::vector<std::vector<double>>& data, int& flags)
 {
     int loop_id { -1 }; // init with -1, -1 means no loop (== LeGO-LOAM's variable "closestHistoryFrameID")
-    std::vector<double> idxs; idxs.reserve(9);
+    std::vector<double> idxs; idxs.reserve(17);
 
     auto curr_key = polarcontext_invkeys_mat_.back(); // current observation (query)
     auto curr_desc = polarcontexts_.back(); // current observation (query)
@@ -346,6 +346,10 @@ std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, s
      */
     if( (int)polarcontext_invkeys_mat_.size() < NUM_EXCLUDE_RECENT + 1)
     {
+        result_distance = 0;
+        idxs.push_back(curr_sz);
+        idxs.push_back(curr_sz);
+        data.push_back(idxs);        
         std::pair<int, float> result {loop_id, 0.0};
         return result; // Early return 
     }
@@ -386,6 +390,10 @@ std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, s
     for ( int candidate_iter_idx = 0; candidate_iter_idx < NUM_CANDIDATES_FROM_TREE; candidate_iter_idx++ )
     {
         MatrixXd polarcontext_candidate = polarcontexts_[ candidate_indexes[candidate_iter_idx] ];
+        
+        // return_idx
+        if(curr_sz > flags && candidate_indexes[candidate_iter_idx] > flags) continue;
+        
         std::pair<double, int> sc_dist_result = distanceBtnScanContext( curr_desc, polarcontext_candidate ); 
         
         double candidate_dist = sc_dist_result.first;
@@ -404,23 +412,27 @@ std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, s
     /* 
      * loop threshold check
      */
-    idxs.push_back(nn_idx);
+    result_distance = min_dist;
     idxs.push_back(curr_sz);
-    loop_histories.push_back(idxs);
-    if( min_dist < SC_DIST_THRES )
-    {
-        loop_id = nn_idx; 
+    idxs.push_back(nn_idx);
+    data.push_back(idxs);
+    loop_id = nn_idx; 
+    cout << "[SC Loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
+
+    // if( min_dist < SC_DIST_THRES )
+    // {
+    //     loop_id = nn_idx; 
     
-        // std::cout.precision(3); 
-        cout << "[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
-        // cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << endl;
-    }
-    else
-    {
-        std::cout.precision(3); 
-        cout << "[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
-        // cout << "[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << endl;
-    }
+    //     // std::cout.precision(3); 
+    //     cout << "[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
+    //     // cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << endl;
+    // }
+    // else
+    // {
+    //     std::cout.precision(3); 
+    //     cout << "[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
+    //     // cout << "[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << endl;
+    // }
 
     // To do: return also nn_align (i.e., yaw diff)
     float yaw_diff_rad = deg2rad(nn_align * PC_UNIT_SECTORANGLE);

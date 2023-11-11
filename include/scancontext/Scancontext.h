@@ -69,7 +69,7 @@ public:
 
     // User-side API
     void makeAndSaveScancontextAndKeys( pcl::PointCloud<SCPointType> & _scan_down );
-    std::pair<int, float> detectLoopClosureID( double& candidate_dist , std::vector<std::vector<double>>& loop_histories); // int: nearest node index, float: relative yaw  
+    std::pair<int, float> detectLoopClosureID( double& candidate_dist, std::vector<std::vector<double>>& data , int& flags); // int: nearest node index, float: relative yaw  
 
     // for ltslam 
     // User-side API for multi-session
@@ -89,7 +89,7 @@ public:
     const double PC_UNIT_RINGGAP = PC_MAX_RADIUS / double(PC_NUM_RING);
 
     // tree
-    const int    NUM_EXCLUDE_RECENT = 30; // simply just keyframe gap (related with loopClosureFrequency in yaml), but node position distance-based exclusion is ok. 
+    const int    NUM_EXCLUDE_RECENT = 1; // simply just keyframe gap (related with loopClosureFrequency in yaml), but node position distance-based exclusion is ok. 
     const int    NUM_CANDIDATES_FROM_TREE = 3; // 10 is enough. (refer the IROS 18 paper)
 
     // loop thres
