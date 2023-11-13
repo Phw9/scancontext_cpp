@@ -147,14 +147,14 @@ void addScan(
   }
 }
 
-void performSCLoopClosure(pcl::PointCloud<SCPointType> & _scan_down)
+void performSCLoopClosure(int& iter)
 {
     static int cur = 0;
     double candidate_dist_ = -1;
-    scManager.makeAndSaveScancontextAndKeys( _scan_down );
+    // scManager.makeAndSaveScancontextAndKeys( _scan_down );
     // std::cout << "polar size: " << scManager.polarcontexts_.size() << " "
     //           << scManager.polarcontext_invkeys_.size() << " " << scManager.polarcontext_vkeys_.size();
-    auto detectResult = scManager.detectLoopClosureID( candidate_dist_ , datas, FLAGS_return_idx); // first: nn index, second: yaw diff 
+    auto detectResult = scManager.detectLoopClosureID( candidate_dist_ , datas, FLAGS_return_idx, iter); // first: nn index, second: yaw diff 
     // std::cout << "datas & datas.back() size: " << datas.size() << ", " << datas.back().size() << std::endl;
     datas.back().push_back(translations[datas.back()[0]].x());
     datas.back().push_back(translations[datas.back()[0]].y());
@@ -207,7 +207,11 @@ int main(int argc, char** argv) {
     pcl::PointCloud<SCPointType> pcl; 
     addScan(scan_fns.at(i), pcl);
     std::cout << scan_fns.at(i) << " file read and start SC loop detect" << std::endl;
-    performSCLoopClosure(pcl);
+    scManager.makeAndSaveScancontextAndKeys( pcl );
+
+  }
+  for(int i=0; i< scan_fns.size(); i++) {
+    performSCLoopClosure(i);
   }
 
   std::ofstream outputFile;

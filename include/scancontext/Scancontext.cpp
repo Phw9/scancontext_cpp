@@ -333,14 +333,14 @@ std::pair<int, float> SCManager::detectLoopClosureIDBetweenSession (std::vector<
 } // SCManager::detectLoopClosureIDBetweenSession
 
 
-std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, std::vector<std::vector<double>>& data, int& flags)
+std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, std::vector<std::vector<double>>& data, int& flags, int& iter)
 {
     int loop_id { -1 }; // init with -1, -1 means no loop (== LeGO-LOAM's variable "closestHistoryFrameID")
     std::vector<double> idxs; idxs.reserve(17);
 
-    auto curr_key = polarcontext_invkeys_mat_.back(); // current observation (query)
-    auto curr_desc = polarcontexts_.back(); // current observation (query)
-    double curr_sz = double(polarcontexts_.size() - 1);
+    auto curr_key = polarcontext_invkeys_mat_.at(iter); // current observation (query)
+    auto curr_desc = polarcontexts_.at(iter); // current observation (query)
+    double curr_sz = double(iter);
     /* 
      * step 1: candidates from ringkey tree_
      */
@@ -392,6 +392,7 @@ std::pair<int, float> SCManager::detectLoopClosureID (double& result_distance, s
         MatrixXd polarcontext_candidate = polarcontexts_[ candidate_indexes[candidate_iter_idx] ];
         
         // return_idx
+        if(curr_sz < flags && candidate_indexes[candidate_iter_idx] < flags) continue;
         if(curr_sz > flags && candidate_indexes[candidate_iter_idx] > flags) continue;
         
         std::pair<double, int> sc_dist_result = distanceBtnScanContext( curr_desc, polarcontext_candidate ); 
