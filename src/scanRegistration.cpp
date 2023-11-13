@@ -3,6 +3,8 @@
 #include "fmt/fmt.h"
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include <regex>
+
 
 DEFINE_string(seq_dir, "/data/new_dataset_project/hangpa01",
     "sequence directory.");
@@ -13,12 +15,15 @@ DEFINE_int32(return_idx, 10,
 using SCPointType = pcl::PointXYZI;
 
 std::vector<std::string> scan_fns;
+std::vector<std::string> scan_key_fns;
 std::vector<double> timestamps;
+std::vector<int> keyframes;
 std::vector<Eigen::Quaterniond> quaternions;
 std::vector<Eigen::Matrix3d> rotations;
 std::vector<Eigen::Vector3d> translations;
 std::vector<pcl::PointCloud<SCPointType>> pcls;
 std::vector<std::vector<double>> datas;
+std::vector<std::vector<double>> datas_key;
 std::vector<double> dists;
 int N_SCAN;
 
@@ -78,6 +83,30 @@ void readLidarData(const std::string & seq_dir)
   fmt::print("[readLidarData] Fin Scan '{}'\n", scan_fns.back());
 }
 
+void readLidarKeyData(const std::string & seq_dir)
+{
+  auto data_fn = fmt::format("{}/lidar_keyframe_data.txt", seq_dir);
+  std::fstream f_data(data_fn.c_str(), std::ios::in);
+  std::string line;
+  while (std::getline(f_data, line))
+  {
+    if (line.empty()) { break; }
+    std::stringstream ss;
+    ss << line;
+    double timestamp;
+    std::string scan_fn;
+
+    ss >> timestamp >> scan_fn;
+    scan_key_fns.push_back(fmt::format("{}/{}", seq_dir, scan_fn));
+    if (scan_key_fns.size() == timestamps.size()) { break; }
+  }
+  f_data.close();
+
+  // ROS_ASSERT(scan_key_fns.size() == timestamps.size());
+  fmt::print("[readLidarData] 1st Scan '{}'\n", scan_key_fns.front());
+  fmt::print("[readLidarData] Fin Scan '{}'\n", scan_key_fns.back());
+}
+
 void readPoses(const std::string & seq_dir)
 {
   auto data_fn = fmt::format("{}/pose_fast_lio2.txt", seq_dir);
@@ -109,6 +138,25 @@ void readPoses(const std::string & seq_dir)
   fmt::print("[readPoses] N_SCAN (updated): {}\n", N_SCAN);
 }
 
+void readKeyFrame(const std::string& seq_dir) {
+  std::string file_path = seq_dir + "/lidar_keyframe_data.txt";
+
+  std::ifstream file(file_path);
+  if (!file.is_open()) {
+      std::cerr << "can't open file " << file_path << std::endl;
+      return;
+  }
+  std::string line;
+  while (std::getline(file, line)) {
+      std::smatch match;
+      if (std::regex_search(line, match, std::regex("/(\\d+)\\.bin"))) {
+          keyframes.push_back(std::stoi(match[1].str()));
+      }
+  }
+  for(auto i : keyframes) {
+    std::cout << i << " ";
+  }
+}
 
 void addScan(
   const std::string & scan_fn,
@@ -201,8 +249,9 @@ void performSCLoopClosure(int& iter)
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, false);
   readLidarData(FLAGS_seq_dir);
+  readLidarKeyData(FLAGS_seq_dir);
+  readKeyFrame(FLAGS_seq_dir);
   readPoses(FLAGS_seq_dir);
-
   for(int i=0; i < scan_fns.size(); i++) {
     pcl::PointCloud<SCPointType> pcl; 
     addScan(scan_fns.at(i), pcl);
@@ -210,10 +259,16 @@ int main(int argc, char** argv) {
     scManager.makeAndSaveScancontextAndKeys( pcl );
 
   }
-  for(int i=0; i< scan_fns.size(); i++) {
+  // // for all
+  // for(int i=0; i< scan_fns.size(); i++) {
+  //   performSCLoopClosure(i);
+  // }
+
+  // for keyframes
+  for(auto i : keyframes) {
     performSCLoopClosure(i);
   }
-
+  
   std::ofstream outputFile;
   std::string lfilename = FLAGS_data_txt_dir;
   outputFile.open(lfilename, std::ios_base::out);
